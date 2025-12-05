@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Universal - SFC & Hoja</title>
+    <title>POS Pro V26</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,12 +18,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <style>
-        body { background-color: #f8fafc; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { background-color: #0f172a; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
         .scroller::-webkit-scrollbar { width: 4px; }
-        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .scroller::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
         .cart-panel { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .cart-open { transform: translateY(0); }
         .cart-closed { transform: translateY(calc(100% - 70px)); }
+        
         .fade-in { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
@@ -47,12 +49,11 @@
 
         var db = firebase.firestore();
         var auth = firebase.auth();
-        var APP_ID = "tienda_final_v22_produccion"; 
+        var APP_ID = "tienda_final_v26_text_visibility_fix"; 
         var PRODUCTS_REF = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('products');
         var SALES_REF = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('sales');
 
-        // --- 2. HELPERS VISUALES Y LÓGICOS ---
-
+        // --- 2. ICONOS ---
         var Icon = function(props) {
             var p={
                 search:"M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
@@ -67,9 +68,9 @@
                 chart:"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
                 scissors:"M4.5 10a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zM17 10a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zM8.835 12.335L12 15.5l3.165-3.165M12 15.5V19.5",
                 download:"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
-                xCircle:"M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
                 card:"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
-                cash:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                cash:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+                refresh:"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
             };
             return <svg className={props.className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={p[props.name]} /></svg>;
         };
@@ -83,14 +84,13 @@
             return '';
         };
 
-        // Lógica Comisión Clip (3.6% + IVA)
         var calculateClipNet = function(amount) {
             var commission = Math.round((amount * 0.036) * 100) / 100;
             var iva = Math.round((commission * 0.16) * 100) / 100;
             return amount - (commission + iva);
         };
 
-        // --- TARJETA ---
+        // --- TARJETA DE PRODUCTO ---
         var ProductCard = function(props) {
             var p = props.product;
             var isAdmin = props.isAdmin;
@@ -105,49 +105,45 @@
 
             return (
                 <div onClick={function(){ if(isAdmin) props.onEdit(p); else props.onAdd(p); }} 
-                     className={"relative flex flex-col bg-white rounded-xl shadow-sm overflow-hidden aspect-square cursor-pointer border border-gray-100 transition-transform " + (isAdmin ? "" : "active:scale-95")}>
-                    {!isAdmin && props.qty > 0 && <div className="absolute top-2 right-2 w-7 h-7 bg-white text-gray-900 font-bold rounded-full flex items-center justify-center shadow-md z-10 text-sm border">{props.qty}</div>}
+                     className={"relative flex flex-col bg-white rounded-lg shadow-sm overflow-hidden aspect-square cursor-pointer border border-gray-700 transition-transform " + (isAdmin ? "" : "active:scale-95")}>
+                    
+                    {!isAdmin && props.qty > 0 && <div className="absolute top-1 right-1 w-5 h-5 bg-white text-gray-900 font-bold rounded-full flex items-center justify-center shadow-md z-10 text-xs border border-gray-300">{props.qty}</div>}
+
                     {isAdmin && (
-                        <div className="absolute top-2 right-2 z-10 flex gap-2">
-                            <button onClick={function(e){ e.stopPropagation(); props.onDelete(p); }} className="w-8 h-8 bg-white text-red-500 rounded-full flex items-center justify-center shadow-md hover:bg-red-50 border border-red-100"><Icon name="trash" className="w-4 h-4" /></button>
-                            <div className="w-8 h-8 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-md border border-blue-100"><Icon name="edit" className="w-4 h-4" /></div>
+                        <div className="absolute top-1 right-1 z-10 flex gap-1">
+                            <button onClick={function(e){ e.stopPropagation(); props.onDelete(p); }} className="w-6 h-6 bg-white text-red-500 rounded-full flex items-center justify-center shadow-md border border-red-100"><Icon name="trash" className="w-3 h-3" /></button>
+                            <div className="w-6 h-6 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-md border border-blue-100"><Icon name="edit" className="w-3 h-3" /></div>
                         </div>
                     )}
-                    <div className="absolute top-2 left-2 z-10 flex gap-1 filter drop-shadow-md">
-                        <span className="text-xl">{isSFC ? '🦆' : '🍁'}</span>
-                        {emoji && <span className="text-lg bg-white bg-opacity-90 rounded-full w-6 h-6 flex items-center justify-center shadow-sm">{emoji}</span>}
+
+                    <div className="absolute top-1 left-1 z-10 flex gap-1 filter drop-shadow-md">
+                        <span className="text-sm">{isSFC ? '🦆' : '🍁'}</span>
+                        {emoji && <span className="text-xs bg-white bg-opacity-90 rounded-full w-4 h-4 flex items-center justify-center shadow-sm">{emoji}</span>}
                     </div>
-                    <div className={"flex-1 flex items-center justify-center relative " + bgClass}><span className="text-4xl font-black text-white opacity-90 tracking-tighter">{initials}</span></div>
-                    <div className="p-2 flex flex-col justify-between h-16 bg-white">
-                        <div className="text-xs font-bold text-gray-800 truncate">{p.name}</div>
+
+                    <div className={"flex-1 flex items-center justify-center relative " + bgClass}><span className="text-2xl font-black text-white opacity-90 tracking-tighter">{initials}</span></div>
+                    <div className="p-1.5 flex flex-col justify-between h-12 bg-white">
+                        <div className="text-[10px] font-bold text-gray-800 truncate leading-tight">{p.name}</div>
                         <div className="flex justify-between items-end">
-                            <div className={"text-xs font-bold " + (p.stock <= 0 ? "text-red-500" : "text-gray-500")}>{p.stock} pz</div>
-                            <span className="font-bold text-lg text-gray-900 leading-none">{formatMoney(p.price)}</span>
+                            <div className={"text-[9px] font-bold " + (p.stock <= 0 ? "text-red-500" : "text-gray-400")}>{p.stock}</div>
+                            <span className="font-bold text-sm text-gray-900 leading-none">{formatMoney(p.price)}</span>
                         </div>
                     </div>
                 </div>
             );
         };
 
-        // --- REPORTES ---
+        // --- PANTALLA DE REPORTE ---
         var ReportsModal = function(props) {
             if (!props.isOpen) return null;
             
-            var [salesData, setSalesData] = React.useState({ 
-                globalTotal: 0, transferTotal: 0, cardTotal: 0, cardNetTotal: 0,
-                sfcTotal: 0, sfcComm: 0, sfcItems: {}, 
-                hojaTotal: 0, hojaComm: 0, hojaItems: {} 
-            });
+            var [salesData, setSalesData] = React.useState({ globalTotal: 0, transferTotal: 0, cardTotal: 0, cardNetTotal: 0, sfcTotal: 0, sfcComm: 0, sfcItems: {}, hojaTotal: 0, hojaComm: 0, hojaItems: {} });
             var [confirmCutSFC, setConfirmCutSFC] = React.useState(false);
             var [confirmCutHoja, setConfirmCutHoja] = React.useState(false);
 
             React.useEffect(function() {
                 var unsub = SALES_REF.onSnapshot(function(snap) {
-                    var data = { 
-                        globalTotal: 0, transferTotal: 0, cardTotal: 0, cardNetTotal: 0,
-                        sfcTotal: 0, sfcComm: 0, sfcItems: {}, 
-                        hojaTotal: 0, hojaComm: 0, hojaItems: {} 
-                    };
+                    var data = { globalTotal: 0, transferTotal: 0, cardTotal: 0, cardNetTotal: 0, sfcTotal: 0, sfcComm: 0, sfcItems: {}, hojaTotal: 0, hojaComm: 0, hojaItems: {} };
                     snap.forEach(function(doc) {
                         var sale = doc.data();
                         data.globalTotal += sale.total;
@@ -212,6 +208,8 @@
                 document.body.appendChild(a); a.click(); document.body.removeChild(a);
             };
 
+            // ** CORRECCIÓN DE VISIBILIDAD DE TEXTO **
+            // Añadí clases "text-slate-800" y "text-gray-600" explícitas en las listas para asegurar que se vean sobre fondo blanco.
             return (
                 <div className="fixed inset-0 z-50 bg-gray-100 flex flex-col animate-fade-in">
                     <div className="bg-slate-900 p-4 text-white flex justify-between items-center shadow-lg"><h2 className="text-xl font-bold flex items-center gap-2"><Icon name="chart" /> Cortes de Caja</h2><button onClick={props.onClose}><Icon name="close" /></button></div>
@@ -230,7 +228,10 @@
                             <div className="bg-blue-50 p-4 border-b border-blue-100 flex justify-between items-center"><h3 className="font-bold text-blue-800 flex items-center gap-2 text-lg">🦆 SFC</h3><div className="text-right"><div className="text-xs text-blue-600 font-bold uppercase">Venta</div><div className="font-black text-xl text-blue-900">{formatMoney(salesData.sfcTotal)}</div></div></div>
                             <div className="p-4">
                                 <div className="flex justify-between items-center mb-4 bg-blue-100 p-3 rounded-xl"><span className="font-bold text-blue-700 text-sm">Comisión:</span><span className="font-black text-lg text-blue-800">{formatMoney(salesData.sfcComm)}</span></div>
-                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">{Object.keys(salesData.sfcItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : Object.entries(salesData.sfcItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-100 py-1"><span>{entry[0]}</span><span className="font-bold">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }</ul>
+                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">
+                                    {Object.keys(salesData.sfcItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : 
+                                        Object.entries(salesData.sfcItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-200 py-1 text-slate-800"><span>{entry[0]}</span><span className="font-bold text-slate-900">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }
+                                </ul>
                                 <div className="flex gap-2">
                                     <button onClick={function(){ downloadReport('sfc') }} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg shadow active:scale-95 flex items-center justify-center gap-2"><Icon name="download" /> TXT</button>
                                     {confirmCutSFC ? <button onClick={function(){ executeCut('sfc') }} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg shadow animate-pulse">¿CONFIRMAR?</button> : <button onClick={function(){ setConfirmCutSFC(true) }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2 active:scale-95"><Icon name="scissors" /> CERRAR</button>}
@@ -243,7 +244,10 @@
                             <div className="bg-orange-50 p-4 border-b border-orange-100 flex justify-between items-center"><h3 className="font-bold text-orange-800 flex items-center gap-2 text-lg">🍁 Hoja</h3><div className="text-right"><div className="text-xs text-orange-600 font-bold uppercase">Venta</div><div className="font-black text-xl text-orange-900">{formatMoney(salesData.hojaTotal)}</div></div></div>
                             <div className="p-4">
                                 <div className="flex justify-between items-center mb-4 bg-orange-100 p-3 rounded-xl"><span className="font-bold text-orange-700 text-sm">Comisión:</span><span className="font-black text-lg text-orange-800">{formatMoney(salesData.hojaComm)}</span></div>
-                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">{Object.keys(salesData.hojaItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : Object.entries(salesData.hojaItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-100 py-1"><span>{getCatEmoji(entry[1].category)} {entry[0]}</span><span className="font-bold">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }</ul>
+                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">
+                                    {Object.keys(salesData.hojaItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : 
+                                        Object.entries(salesData.hojaItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-200 py-1 text-slate-800"><span>{getCatEmoji(entry[1].category)} {entry[0]}</span><span className="font-bold text-slate-900">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }
+                                </ul>
                                 <div className="flex gap-2">
                                     <button onClick={function(){ downloadReport('hoja') }} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg shadow active:scale-95 flex items-center justify-center gap-2"><Icon name="download" /> TXT</button>
                                     {confirmCutHoja ? <button onClick={function(){ executeCut('hoja') }} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg shadow animate-pulse">¿CONFIRMAR?</button> : <button onClick={function(){ setConfirmCutHoja(true) }} className="flex-1 bg-orange-600 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2 active:scale-95"><Icon name="scissors" /> CERRAR</button>}
@@ -300,10 +304,10 @@
                             <button onClick={props.onClose}><Icon name="close" /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-                            <div><label className="text-xs font-bold text-gray-500 uppercase">Nombre</label><input value={form.name} onChange={function(e){handleChange('name',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none" placeholder="Nombre" /></div>
+                            <div><label className="text-xs font-bold text-gray-500 uppercase">Nombre</label><input value={form.name} onChange={function(e){handleChange('name',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none text-gray-900" placeholder="Nombre" /></div>
                             <div className="flex gap-3">
-                                <div className="flex-1"><label className="text-xs font-bold text-gray-500 uppercase">Precio</label><input type="number" value={form.price} onChange={function(e){handleChange('price',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none" placeholder="$" /></div>
-                                <div className="flex-1"><label className="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" value={form.stock} onChange={function(e){handleChange('stock',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none" placeholder="#" /></div>
+                                <div className="flex-1"><label className="text-xs font-bold text-gray-500 uppercase">Precio</label><input type="number" value={form.price} onChange={function(e){handleChange('price',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none text-gray-900" placeholder="$" /></div>
+                                <div className="flex-1"><label className="text-xs font-bold text-gray-500 uppercase">Stock</label><input type="number" value={form.stock} onChange={function(e){handleChange('stock',e.target.value)}} className="w-full p-3 bg-gray-100 rounded-lg font-bold outline-none text-gray-900" placeholder="#" /></div>
                             </div>
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Tienda:</label>
@@ -407,23 +411,31 @@
             if(loading) return <div className="h-screen flex items-center justify-center font-bold text-gray-500">Cargando...</div>;
 
             return (
-                <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-900 font-sans flex-col md:flex-row">
-                    <div className="flex-1 flex flex-col h-full relative w-full">
-                        <div className={"shadow-sm z-10 flex flex-col sticky top-0 p-3 transition-colors " + (isAdminMode ? "bg-slate-800" : "bg-gradient-to-r from-blue-900 to-slate-900")}>
+                <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100 font-sans flex-col md:flex-row">
+                    <div className="flex-1 flex flex-col h-full relative w-full bg-slate-900">
+                        <div className={"shadow-md z-10 flex flex-col sticky top-0 p-3 transition-colors " + (isAdminMode ? "bg-slate-800" : "bg-gradient-to-br from-red-900 to-black")}>
                             <div className="flex gap-3 items-center">
+                                <button onClick={function(){window.location.reload()}} className="text-white/50 p-2 hover:text-white"><Icon name="refresh" /></button>
                                 <div className="flex-1 relative">
                                     <span className="absolute left-3 top-2.5 text-gray-400"><Icon name="search" /></span>
-                                    <input className={"w-full pl-10 pr-10 py-2 rounded-lg outline-none " + (isAdminMode ? "bg-slate-700 text-white placeholder-gray-400" : "bg-white text-gray-800")} placeholder="Buscar..." value={search} onChange={function(e){setSearch(e.target.value)}} />
+                                    <input 
+                                        className={"w-full pl-10 pr-10 py-2 rounded-lg outline-none " + (isAdminMode ? "bg-slate-700 text-white placeholder-gray-400" : "bg-white/10 text-white placeholder-gray-300 backdrop-blur-sm")}
+                                        placeholder="Buscar..." 
+                                        value={search} onChange={function(e){setSearch(e.target.value)}} 
+                                    />
                                     {search && <button onClick={function(){setSearch('')}} className="absolute right-3 top-2 text-gray-400 p-1"><Icon name="close" className="w-4 h-4" /></button>}
                                 </div>
                                 <button onClick={function(){setReportsOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="chart" /></button>
                                 <button onClick={function(){setIsAdminMode(!isAdminMode)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-yellow-500 text-slate-900" : "bg-white/10 text-yellow-400 hover:bg-white/20")}><Icon name="settings" /></button>
                                 {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow animate-fade-in"><Icon name="plus" /></button>}
                             </div>
-                            <div className={"text-xs mt-2 px-1 flex justify-between " + (isAdminMode ? "text-yellow-400 font-bold" : "text-blue-100 font-medium")}><span>{isAdminMode ? "MODO ADMINISTRADOR" : "PUNTO DE VENTA"}</span><span>{products.length} prods</span></div>
+                            <div className={"text-xs mt-2 px-1 flex justify-between " + (isAdminMode ? "text-yellow-400 font-bold" : "text-white/70 font-medium")}>
+                                <span>{isAdminMode ? "MODO ADMINISTRADOR" : "PUNTO DE VENTA"}</span><span>{products.length} prods</span>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-3 pb-32 scroller">
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+
+                        <div className="flex-1 overflow-y-auto p-3 pb-32 scroller bg-gradient-to-b from-red-900 via-slate-900 to-black">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                                 {filtered.map(function(p){ 
                                     var q = (cart.find(function(x){return x.id===p.id}) || {}).qty || 0;
                                     return <ProductCard key={p.id} product={p} qty={q} isAdmin={isAdminMode} onAdd={addToCart} onEdit={function(x){setProductToEdit(x);setModalOpen(true)}} onDelete={setDeleteData} /> 
@@ -438,16 +450,16 @@
                                 <div className="flex items-center gap-3"><div className={"w-10 h-10 rounded-full flex items-center justify-center font-bold text-white transition-all " + (cart.length>0?"bg-blue-600 scale-100":"bg-gray-300 scale-0")}>{totalItems}</div><div className="flex flex-col"><span className="text-xs font-bold text-gray-400 uppercase">Total a Pagar</span><span className="text-2xl font-black text-slate-800 leading-none">{formatMoney(total)}</span></div></div>
                                 <div className="text-gray-400 md:hidden">{isCartOpen ? <Icon name="chevronDown" /> : <Icon name="chevronUp" />}</div>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 md:bg-white scroller">
+                            <div className="flex-1 overflow-y-auto p-4 bg-gray-50 md:bg-white scroller text-slate-800">
                                 <h3 className="text-sm font-bold text-gray-500 mb-3 uppercase">Detalle de Compra</h3>
                                 {cart.length===0 ? <p className="text-gray-400 text-center py-10">Agrega productos.</p> : 
                                     cart.map(function(item){
                                         var emoji = !item.store==='sfc' ? getCatEmoji(item.category) : '';
-                                        return <div key={item.id} className="flex justify-between items-center bg-white p-3 mb-2 rounded-xl shadow-sm border border-gray-100"><div><div className="font-bold text-slate-800">{emoji} {item.name}</div><div className="text-xs text-gray-500">{formatMoney(item.price)} x {item.qty}</div></div><div className="flex items-center gap-3"><span className="font-bold text-slate-900">{formatMoney(item.price*item.qty)}</span><button onClick={function(){removeFromCart(item.id)}} className="p-2 text-red-500 bg-red-50 rounded-lg"><Icon name="trash" className="w-4 h-4" /></button></div></div>
+                                        return <div key={item.id} className="flex justify-between items-center bg-white p-2 mb-2 rounded-lg shadow-sm border border-gray-100"><div><div className="font-bold text-slate-800 text-sm">{emoji} {item.name}</div><div className="text-xs text-gray-500">{formatMoney(item.price)} x {item.qty}</div></div><div className="flex items-center gap-3"><span className="font-bold text-slate-900">{formatMoney(item.price*item.qty)}</span><button onClick={function(){removeFromCart(item.id)}} className="p-2 text-red-500 bg-red-50 rounded-lg"><Icon name="trash" className="w-4 h-4" /></button></div></div>
                                     })
                                 }
                             </div>
-                            <div className="p-4 bg-white border-t border-gray-100" style={{paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'}}>
+                            <div className="p-4 bg-white border-t border-gray-100 text-slate-800" style={{paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'}}>
                                 <div className="grid grid-cols-2 gap-2 mb-3">
                                     <button onClick={function(){ setPaymentMethod('cash'); setPayAmount(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='cash'?"bg-green-100 text-green-700 border border-green-200":"bg-gray-100 text-gray-400")}>💵 Efectivo</button>
                                     <button onClick={function(){ setPaymentMethod('transfer'); setPayAmount(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='transfer'?"bg-indigo-100 text-indigo-700 border border-indigo-200":"bg-gray-100 text-gray-400")}>📲 Transf.</button>
