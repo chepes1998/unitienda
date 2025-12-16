@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Maestro</title>
+    <title>POS Pro V27</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,9 +18,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <style>
-        body { background-color: #0f172a; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+        body { background-color: #f8fafc; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; }
         .scroller::-webkit-scrollbar { width: 4px; }
-        .scroller::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .scroller::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .cart-panel { transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
         .cart-open { transform: translateY(0); }
         .cart-closed { transform: translateY(calc(100% - 70px)); }
@@ -47,11 +47,7 @@
 
         var db = firebase.firestore();
         var auth = firebase.auth();
-        
-        // *** ESTA ES LA LÍNEA MÁGICA ***
-        // Al dejar este nombre fijo, tus datos nunca más se perderán al actualizar el código.
-        var APP_ID = "tienda_produccion_real_v1"; 
-        
+        var APP_ID = "tienda_produccion_real_v1"; // Mismo ID para no perder datos
         var PRODUCTS_REF = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('products');
         var SALES_REF = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('sales');
 
@@ -70,11 +66,11 @@
                 chart:"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
                 scissors:"M4.5 10a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zM17 10a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0zM8.835 12.335L12 15.5l3.165-3.165M12 15.5V19.5",
                 download:"M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4",
-                xCircle:"M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z",
                 card:"M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z",
                 cash:"M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
                 refresh:"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
-                check: "M5 13l4 4L19 7"
+                check: "M5 13l4 4L19 7",
+                money: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
             };
             return <svg className={props.className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={p[props.name]} /></svg>;
         };
@@ -94,12 +90,11 @@
             return amount - (commission + iva);
         };
 
-        // --- TARJETA ---
+        // --- TARJETA DE PRODUCTO ---
         var ProductCard = function(props) {
             var p = props.product;
             var isAdmin = props.isAdmin;
             var isSFC = p.store === 'sfc';
-            
             var colors = ['bg-blue-600', 'bg-violet-600', 'bg-emerald-500', 'bg-rose-500', 'bg-amber-500', 'bg-cyan-600', 'bg-indigo-600', 'bg-fuchsia-600'];
             var colorIndex = (p.name || "").length % colors.length;
             var bgClass = colors[colorIndex];
@@ -133,9 +128,72 @@
             );
         };
 
-        // --- REPORTE ---
+        // --- NUEVO MÓDULO: RETIROS DE EFECTIVO ---
+        var WithdrawalModal = function(props) {
+            if (!props.isOpen) return null;
+            var [amount, setAmount] = React.useState("");
+
+            var val = parseFloat(amount) || 0;
+            var toDeliver = val * 0.90; // Opción A: Cobras 100, das 90
+            var toCharge = val * 1.10;  // Opción B: Das 100, cobras 110
+
+            return (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-60 p-4 flex items-center justify-center backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
+                        <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="money" /> Retiros de Efectivo</h2>
+                            <button onClick={props.onClose}><Icon name="close" /></button>
+                        </div>
+                        <div className="p-5">
+                            <label className="text-sm font-bold text-gray-500 uppercase mb-2 block text-center">Monto Solicitado</label>
+                            <input 
+                                type="number" 
+                                autoFocus
+                                className="w-full text-center text-4xl font-black text-gray-800 border-b-2 border-emerald-500 outline-none pb-2 mb-6" 
+                                placeholder="$0"
+                                value={amount}
+                                onChange={function(e){ setAmount(e.target.value) }}
+                            />
+
+                            <div className="space-y-4">
+                                {/* Opción A */}
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-blue-500 uppercase">Cobras en Terminal</span>
+                                        <span className="text-xs font-bold text-emerald-600 uppercase">Entregas Efectivo</span>
+                                    </div>
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span>
+                                        <Icon name="arrowRight" className="text-gray-400 w-4 h-4"/>
+                                        <span className="text-3xl font-black text-emerald-600">{formatMoney(toDeliver)}</span>
+                                    </div>
+                                    <div className="text-[10px] text-center text-blue-400 mt-1 font-medium">Ganancia: {formatMoney(val - toDeliver)}</div>
+                                </div>
+
+                                {/* Opción B */}
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-bold text-emerald-600 uppercase">Entregas Exacto</span>
+                                        <span className="text-xs font-bold text-orange-500 uppercase">Cobras en Terminal</span>
+                                    </div>
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span>
+                                        <Icon name="arrowRight" className="text-gray-400 w-4 h-4"/>
+                                        <span className="text-3xl font-black text-orange-600">{formatMoney(toCharge)}</span>
+                                    </div>
+                                    <div className="text-[10px] text-center text-orange-400 mt-1 font-medium">Ganancia: {formatMoney(toCharge - val)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- PANTALLA DE REPORTE ---
         var ReportsModal = function(props) {
             if (!props.isOpen) return null;
+            
             var [salesData, setSalesData] = React.useState({ globalTotal: 0, transferTotal: 0, cardTotal: 0, cardNetTotal: 0, sfcTotal: 0, sfcComm: 0, sfcItems: {}, hojaTotal: 0, hojaComm: 0, hojaItems: {} });
             var [confirmCutSFC, setConfirmCutSFC] = React.useState(false);
             var [confirmCutHoja, setConfirmCutHoja] = React.useState(false);
@@ -314,6 +372,7 @@
             
             var [modalOpen, setModalOpen] = React.useState(false);
             var [reportsOpen, setReportsOpen] = React.useState(false);
+            var [withdrawalOpen, setWithdrawalOpen] = React.useState(false); // New state
             var [productToEdit, setProductToEdit] = React.useState(null);
             var [deleteData, setDeleteData] = React.useState(null);
             var [isAdminMode, setIsAdminMode] = React.useState(false);
@@ -389,7 +448,6 @@
 
             return (
                 <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100 font-sans flex-col md:flex-row">
-                    {/* Toast Notification */}
                     {toast && (
                         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-xl z-[70] animate-fade-in flex items-center gap-2 border border-slate-700">
                             <Icon name="check" className="w-5 h-5 text-green-400" />
@@ -411,6 +469,7 @@
                                     {search && <button onClick={function(){setSearch('')}} className="absolute right-3 top-2 text-gray-400 p-1"><Icon name="close" className="w-4 h-4" /></button>}
                                 </div>
                                 <button onClick={function(){setReportsOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="chart" /></button>
+                                <button onClick={function(){setWithdrawalOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="money" className="w-6 h-6 text-green-400"/></button>
                                 <button onClick={function(){setIsAdminMode(!isAdminMode)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-yellow-500 text-slate-900" : "bg-white/10 text-yellow-400 hover:bg-white/20")}><Icon name="settings" /></button>
                                 {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow animate-fade-in"><Icon name="plus" /></button>}
                             </div>
@@ -418,6 +477,7 @@
                                 <span>{isAdminMode ? "MODO ADMIN" : "PUNTO DE VENTA"}</span><span>{products.length} prods</span>
                             </div>
                         </div>
+
                         <div className="flex-1 overflow-y-auto p-3 pb-32 scroller bg-gradient-to-b from-red-900 via-slate-900 to-black">
                             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                                 {filtered.map(function(p){ 
@@ -458,6 +518,7 @@
                     <ProductModal isOpen={modalOpen} onClose={function(){setModalOpen(false)}} onSave={handleSave} productToEdit={productToEdit} />
                     <ConfirmModal isOpen={!!deleteData} productName={deleteData?deleteData.name:''} onClose={function(){setDeleteData(null)}} onConfirm={confirmDelete} />
                     <ReportsModal isOpen={reportsOpen} onClose={function(){setReportsOpen(false)}} onToast={setToast} />
+                    <WithdrawalModal isOpen={withdrawalOpen} onClose={function(){setWithdrawalOpen(false)}} />
                 </div>
             );
         };
