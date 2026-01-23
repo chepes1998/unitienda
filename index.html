@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V28</title>
+    <title>POS Pro V28 Espacioso</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -26,6 +26,35 @@
         .cart-closed { transform: translateY(calc(100% - 70px)); }
         .fade-in { animation: fadeIn 0.2s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* FUERZA BRUTA CSS PARA INPUTS - MODIFICADO PARA SER MÁS GRANDE */
+        .force-input-style {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            opacity: 1 !important;
+            border: none !important; /* Sin borde para un look más limpio */
+            font-size: 18px !important; /* Letra más grande */
+            font-weight: bold !important;
+            line-height: normal !important;
+            padding: 0 15px 0 45px !important; /* Padding ajustado para el icono */
+            border-radius: 12px !important;
+            height: 55px !important; /* Altura aumentada para mejor tacto */
+            width: 100% !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+        }
+        
+        .force-input-style::placeholder {
+            color: #94a3b8 !important;
+            -webkit-text-fill-color: #94a3b8 !important;
+            opacity: 1 !important;
+        }
+        
+        /* Ocultar scrollbar horizontal en la barra de botones */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body>
@@ -72,7 +101,8 @@
                 refresh:"M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15",
                 check: "M5 13l4 4L19 7",
                 money: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
-                trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                trending: "M13 7h8m0 0v8m0-8l-8 8-4-4-6 6",
+                arrowRight: "M14 5l7 7m0 0l-7 7m7-7H3"
             };
             return <svg className={props.className || "w-6 h-6"} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={p[props.name]} /></svg>;
         };
@@ -476,25 +506,44 @@
 
                     <div className="flex-1 flex flex-col h-full relative w-full bg-slate-900">
                         <div className={"shadow-md z-10 flex flex-col sticky top-0 p-3 transition-colors " + (isAdminMode ? "bg-slate-800" : "bg-gradient-to-br from-red-900 to-black")}>
-                            <div className="flex gap-3 items-center">
-                                <button onClick={function(){window.location.reload()}} className="text-white/50 p-2 hover:text-white"><Icon name="refresh" /></button>
-                                <div className="flex-1 relative">
-                                    <span className="absolute left-3 top-2.5 text-gray-400"><Icon name="search" /></span>
+                            
+                            {/* NUEVO DISEÑO DE HEADER: BARRA ARRIBA, ICONOS ABAJO */}
+                            <div className="flex flex-col gap-3">
+                                
+                                {/* FILA 1: BUSCADOR ESPACIOSO */}
+                                <div className="w-full relative">
+                                    <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none"><Icon name="search" className="w-6 h-6" /></span>
                                     <input 
-                                        className={"w-full pl-10 pr-10 py-2 rounded-lg outline-none " + (isAdminMode ? "bg-slate-700 text-white placeholder-gray-400" : "bg-white/10 text-white placeholder-gray-300 backdrop-blur-sm")}
-                                        placeholder="Buscar..." 
-                                        value={search} onChange={function(e){setSearch(e.target.value)}} 
+                                        type="text" 
+                                        className="force-input-style"
+                                        placeholder="Buscar producto..." 
+                                        value={search} 
+                                        onChange={function(e){setSearch(e.target.value)}} 
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        spellCheck="false"
                                     />
-                                    {search && <button onClick={function(){setSearch('')}} className="absolute right-3 top-2 text-gray-400 p-1"><Icon name="close" className="w-4 h-4" /></button>}
+                                    {search && <button onClick={function(){setSearch('')}} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 p-2"><Icon name="close" className="w-5 h-5" /></button>}
                                 </div>
-                                <button onClick={function(){setReportsOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="chart" /></button>
-                                <button onClick={function(){setProfitCalcOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="trending" className="text-purple-400" /></button>
-                                <button onClick={function(){setWithdrawalOpen(true)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="money" className="text-green-400"/></button>
-                                <button onClick={function(){setIsAdminMode(!isAdminMode)}} className={"w-10 h-10 rounded-lg flex items-center justify-center shadow transition-all " + (isAdminMode ? "bg-yellow-500 text-slate-900" : "bg-white/10 text-yellow-400 hover:bg-white/20")}><Icon name="settings" /></button>
-                                {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-10 h-10 rounded-lg flex items-center justify-center shadow animate-fade-in"><Icon name="plus" /></button>}
-                            </div>
-                            <div className={"text-xs mt-2 px-1 flex justify-between " + (isAdminMode ? "text-yellow-400 font-bold" : "text-white/70 font-medium")}>
-                                <span>{isAdminMode ? "MODO ADMIN" : "PUNTO DE VENTA"}</span><span>{products.length} prods</span>
+
+                                {/* FILA 2: BOTONES DE ACCIÓN (SCROLL HORIZONTAL SI ES NECESARIO) */}
+                                <div className="flex justify-between items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                                    <div className="flex gap-2">
+                                        <button onClick={function(){window.location.reload()}} className="text-white/50 p-2 hover:text-white rounded-lg hover:bg-white/10"><Icon name="refresh" /></button>
+                                        <button onClick={function(){setReportsOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="chart" /></button>
+                                        <button onClick={function(){setProfitCalcOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="trending" className="text-purple-400" /></button>
+                                        <button onClick={function(){setWithdrawalOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="money" className="text-green-400"/></button>
+                                    </div>
+                                    <div className="flex gap-2 items-center">
+                                        <div className={"text-xs font-bold text-right leading-tight " + (isAdminMode ? "text-yellow-400" : "text-white/70")}>
+                                            <div className="opacity-70">{isAdminMode ? "ADMIN" : "VENTA"}</div>
+                                            <div>{products.length}</div>
+                                        </div>
+                                        <button onClick={function(){setIsAdminMode(!isAdminMode)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all border-2 " + (isAdminMode ? "bg-yellow-500 border-yellow-400 text-slate-900" : "bg-transparent border-white/20 text-yellow-400 hover:bg-white/10")}><Icon name="settings" /></button>
+                                        {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-11 h-11 rounded-xl flex items-center justify-center shadow-lg animate-fade-in"><Icon name="plus" /></button>}
+                                    </div>
+                                </div>
+                            
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-3 pb-32 scroller bg-gradient-to-b from-red-900 via-slate-900 to-black">
