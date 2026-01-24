@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V28 Espacioso</title>
+    <title>POS Pro V28 Espacioso + Calc</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -175,6 +175,7 @@
             var unitCost = c / u;
             var totalSales = p * u;
             var profit = totalSales - c;
+            var unitProfit = p - unitCost; // Ganancia por unidad
             var margin = c > 0 ? (profit / c) * 100 : 0;
 
             return (
@@ -194,6 +195,10 @@
                             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Costo por unidad:</span><span className="font-bold text-gray-700">{formatMoney(unitCost)}</span></div>
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Venta Total:</span><span className="font-bold text-gray-700">{formatMoney(totalSales)}</span></div>
+                                
+                                {/* NUEVO: GANANCIA POR UNIDAD */}
+                                <div className="flex justify-between text-sm items-center"><span className="text-purple-600 font-bold">Ganancia x Unidad:</span><span className="font-bold text-purple-700 text-lg bg-purple-50 px-2 rounded">{formatMoney(unitProfit)}</span></div>
+
                                 <div className="border-t border-gray-200 my-2"></div>
                                 <div className="flex justify-between items-center">
                                     <span className="font-bold text-purple-700 uppercase">Ganancia Neta:</span>
