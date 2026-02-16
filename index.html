@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V29 Deudas Fix</title>
+    <title>POS Pro V33 Abonos Fix</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -235,7 +235,7 @@
         var DebtsModal = function(props) {
             if (!props.isOpen) return null;
             var [debts, setDebts] = React.useState([]);
-            var [settlingId, setSettlingId] = React.useState(null); // Para saber qué deuda se está cobrando
+            var [settlingId, setSettlingId] = React.useState(null); 
 
             React.useEffect(function() {
                 var unsub = DEBTS_REF.orderBy('date', 'desc').onSnapshot(function(snap) {
@@ -252,14 +252,18 @@
                         {debts.length === 0 ? <div className="text-center text-gray-400 mt-10">No hay deudas pendientes.</div> : 
                             debts.map(function(debt) {
                                 var isSettling = settlingId === debt.id;
+                                var depositText = debt.deposit > 0 ? " (Abonó: " + formatMoney(debt.deposit) + ")" : "";
                                 return (
                                     <div key={debt.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                                         <div className="bg-indigo-50 p-3 flex justify-between items-center border-b border-indigo-100">
-                                            <div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-700"><Icon name="user" className="w-4 h-4" /></div><div className="flex flex-col"><span className="font-bold text-gray-800 leading-none">{debt.customer}</span><span className="text-[10px] text-gray-500">{new Date(debt.date).toLocaleDateString()}</span></div></div>
-                                            <div className="font-black text-xl text-indigo-700">{formatMoney(debt.total)}</div>
+                                            <div className="flex items-center gap-2"><div className="w-8 h-8 bg-indigo-200 rounded-full flex items-center justify-center text-indigo-700"><Icon name="user" className="w-4 h-4" /></div><div className="flex flex-col"><span className="font-bold text-gray-800 leading-none">{debt.customer}</span><span className="text-[10px] text-gray-500">{new Date(debt.date).toLocaleDateString()} {depositText}</span></div></div>
+                                            <div className="text-right">
+                                                <div className="text-[9px] text-gray-400 uppercase font-bold">Resta</div>
+                                                <div className="font-black text-xl text-red-500">{formatMoney(debt.total)}</div>
+                                            </div>
                                         </div>
                                         <div className="p-3">
-                                            <div className="text-xs text-gray-500 mb-2 font-medium uppercase">Productos:</div>
+                                            <div className="text-xs text-gray-500 mb-2 font-medium uppercase">Productos (Total: {formatMoney(debt.original_total)}):</div>
                                             <div className="flex flex-wrap gap-1 mb-3">
                                                 {debt.items.map(function(item, idx){ return <span key={idx} className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">{item.qty} {item.name}</span> })}
                                             </div>
@@ -267,7 +271,7 @@
                                             {/* SELECCIÓN DE MÉTODO DE PAGO */}
                                             {isSettling ? (
                                                 <div className="space-y-2 animate-fade-in">
-                                                    <div className="text-xs font-bold text-center text-indigo-500 uppercase mb-1">¿Cómo pagó?</div>
+                                                    <div className="text-xs font-bold text-center text-indigo-500 uppercase mb-1">¿Cómo pagó el resto?</div>
                                                     <div className="grid grid-cols-3 gap-2">
                                                         <button onClick={function(){ props.onSettle(debt, 'cash'); setSettlingId(null); }} className="py-2 bg-green-100 text-green-700 font-bold rounded-lg border border-green-200 flex flex-col items-center justify-center text-xs"><span className="text-lg">💵</span>Efec</button>
                                                         <button onClick={function(){ props.onSettle(debt, 'card'); setSettlingId(null); }} className="py-2 bg-orange-100 text-orange-700 font-bold rounded-lg border border-orange-200 flex flex-col items-center justify-center text-xs"><span className="text-lg">💳</span>Tarj</button>
@@ -276,7 +280,7 @@
                                                     <button onClick={function(){ setSettlingId(null); }} className="w-full py-2 bg-gray-200 text-gray-600 font-bold rounded-lg text-xs">Cancelar</button>
                                                 </div>
                                             ) : (
-                                                <button onClick={function(){ setSettlingId(debt.id) }} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow active:scale-95 flex items-center justify-center gap-2"><span>COBRAR DEUDA</span><Icon name="cash" className="w-4 h-4" /></button>
+                                                <button onClick={function(){ setSettlingId(debt.id) }} className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow active:scale-95 flex items-center justify-center gap-2"><span>LIQUIDAR RESTANTE</span><Icon name="cash" className="w-4 h-4" /></button>
                                             )}
                                         </div>
                                     </div>
@@ -307,10 +311,12 @@
                         
                         var suffix = sale.method === 'card' ? ' 💳' : '';
 
-                        if (sale.store === 'sfc') {
+                        if (sale.store === 'sfc' || sale.store === 'general') { 
                             data.sfcTotal += sale.total;
                             if(sale.items) sale.items.forEach(function(item) {
-                                data.sfcComm += (item.commission_unit || 0) * item.qty;
+                                if (item.store !== 'general' && item.category !== 'abono') {
+                                    data.sfcComm += (item.commission_unit || 0) * item.qty;
+                                }
                                 var key = item.name + suffix; 
                                 if(!data.sfcItems[key]) data.sfcItems[key] = { qty: 0, total: 0, category: item.category };
                                 data.sfcItems[key].qty += item.qty;
@@ -319,7 +325,10 @@
                         } else if (sale.store === 'hoja') {
                             data.hojaTotal += sale.total;
                             if(sale.items) sale.items.forEach(function(item) {
-                                data.hojaComm += (item.commission_unit || 0) * item.qty;
+                                // PROTECCIÓN DE COMISIONES EN HOJA PARA ABONOS
+                                if (item.store !== 'general' && item.category !== 'abono') {
+                                    data.hojaComm += (item.commission_unit || 0) * item.qty;
+                                }
                                 var key = item.name + suffix;
                                 if(!data.hojaItems[key]) data.hojaItems[key] = { qty: 0, total: 0, category: item.category };
                                 data.hojaItems[key].qty += item.qty;
@@ -333,9 +342,13 @@
             }, []);
 
             var executeCut = function(storeName) {
-                SALES_REF.where('store', '==', storeName).get().then(function(snap) {
+                SALES_REF.get().then(function(snap) { 
                     var batch = db.batch();
-                    snap.forEach(function(doc) { batch.delete(doc.ref); });
+                    snap.forEach(function(doc) { 
+                        var d = doc.data();
+                        if (storeName === 'sfc' && (d.store === 'sfc' || d.store === 'general')) batch.delete(doc.ref);
+                        if (storeName === 'hoja' && d.store === 'hoja') batch.delete(doc.ref);
+                    });
                     return batch.commit();
                 }).then(function() {
                     if(storeName==='sfc') setConfirmCutSFC(false); else setConfirmCutHoja(false);
@@ -468,7 +481,8 @@
             var [cart, setCart] = React.useState([]);
             var [search, setSearch] = React.useState("");
             var [payAmount, setPayAmount] = React.useState("");
-            var [customerName, setCustomerName] = React.useState(""); // NUEVO ESTADO
+            var [customerName, setCustomerName] = React.useState(""); 
+            var [depositAmount, setDepositAmount] = React.useState(""); // NUEVO: Monto que deja a cuenta
             
             var [modalOpen, setModalOpen] = React.useState(false);
             var [reportsOpen, setReportsOpen] = React.useState(false);
@@ -518,8 +532,35 @@
 
             var handleSettleDebt = function(debtDoc, method) {
                 var batch = db.batch();
-                var sfcItems = debtDoc.items.filter(function(i){ return i.store==='sfc' });
-                var hojaItems = debtDoc.items.filter(function(i){ return i.store==='hoja' });
+                
+                // Calcular factor de proporción para el PRECIO (el dinero que entra hoy)
+                var originalTotal = debtDoc.original_total || debtDoc.total;
+                var remainingTotal = debtDoc.total;
+                var ratio = originalTotal > 0 ? (remainingTotal / originalTotal) : 1;
+
+                // Preparar items ajustados
+                var settledItems = debtDoc.items.map(function(item) {
+                    // Lógica de comisión estándar
+                    var comm = 0;
+                    if (item.store === 'sfc') comm = 1.00;
+                    else if (item.store === 'hoja') {
+                        if (item.category === 'granel') comm = 0.50;
+                        else if (item.category === 'dulces') comm = 0.00;
+                        else comm = 1.00; // Abarrotes
+                    }
+
+                    return {
+                        name: item.name, 
+                        qty: item.qty,
+                        price: item.price * ratio, // El precio sí se ajusta (es lo que pagan hoy)
+                        category: item.category,
+                        store: item.store,
+                        commission_unit: comm // La comisión VA COMPLETA porque no se pagó en el abono
+                    };
+                });
+
+                var sfcItems = settledItems.filter(function(i){ return i.store==='sfc' });
+                var hojaItems = settledItems.filter(function(i){ return i.store==='hoja' });
 
                 if(sfcItems.length > 0) {
                     var total = sfcItems.reduce(function(a,i){ return a+(i.price*i.qty) }, 0);
@@ -547,20 +588,44 @@
                         return;
                     }
 
+                    var totalCart = cart.reduce(function(a,i){ return a+(i.price*i.qty) }, 0);
+                    var deposit = parseFloat(depositAmount) || 0;
+                    var debtRemaining = totalCart - deposit;
+
+                    if (debtRemaining < 0) { alert("El abono no puede ser mayor al total."); return; }
+
                     var batch = db.batch();
-                    var totalDebt = cart.reduce(function(a,i){ return a+(i.price*i.qty) }, 0);
                     
+                    // 1. Guardar Deuda (solo por lo que resta)
                     batch.set(DEBTS_REF.doc(), {
                         customer: customerName,
                         items: cart,
-                        total: totalDebt,
+                        total: debtRemaining,
+                        original_total: totalCart,
+                        deposit: deposit,
                         date: new Date().toISOString()
                     });
 
+                    // 2. Si dejó abono, registrarlo como venta YA (Efectivo por defecto o genérico)
+                    // LÓGICA INTELIGENTE: Si todo es hoja -> hoja, si no -> sfc
+                    if (deposit > 0) {
+                        var allHoja = cart.every(function(item){ return item.store === 'hoja' });
+                        var abonoStore = allHoja ? 'hoja' : 'sfc'; 
+
+                        batch.set(SALES_REF.doc(), {
+                            store: abonoStore,
+                            items: [{name: "Abono Fiado: " + customerName, price: deposit, qty: 1, category: 'abono', store: 'general'}],
+                            total: deposit,
+                            method: 'cash', // Asumimos que el abono es en efectivo al momento
+                            date: new Date().toISOString()
+                        });
+                    }
+
+                    // 3. Descontar Inventario
                     cart.forEach(function(i){ batch.update(PRODUCTS_REF.doc(i.id), {stock: i.stock - i.qty}); });
 
                     batch.commit().then(function(){
-                        setCart([]); setPayAmount(""); setPaymentMethod('cash'); setCustomerName(""); setIsCartOpen(false); 
+                        setCart([]); setPayAmount(""); setPaymentMethod('cash'); setCustomerName(""); setDepositAmount(""); setIsCartOpen(false); 
                         setToast("Fiado Guardado 📝");
                     }).catch(function(e) { alert("Error: " + e.message); });
                     return;
@@ -595,6 +660,10 @@
             var change = 0; if (paymentMethod === 'cash') change = payAmount ? parseFloat(payAmount) - total : 0; else change = 0;
             var clipNet = paymentMethod === 'card' ? calculateClipNet(total) : 0;
             var totalItems = cart.reduce(function(a,b){ return a+b.qty },0);
+            
+            // Cálculos para Fiado
+            var depositVal = parseFloat(depositAmount) || 0;
+            var debtTotalVal = total - depositVal;
 
             if(loading) return <div className="h-screen flex items-center justify-center font-bold text-gray-500">Cargando...</div>;
 
@@ -678,18 +747,30 @@
                             </div>
                             <div className="p-4 bg-white border-t border-gray-100 text-slate-800" style={{paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'}}>
                                 <div className="grid grid-cols-3 gap-2 mb-3">
-                                    <button onClick={function(){ setPaymentMethod('cash'); setPayAmount(''); setCustomerName(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='cash'?"bg-green-100 text-green-700 border border-green-200":"bg-gray-100 text-gray-400")}>💵 Efec.</button>
-                                    <button onClick={function(){ setPaymentMethod('transfer'); setPayAmount(''); setCustomerName(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='transfer'?"bg-indigo-100 text-indigo-700 border border-indigo-200":"bg-gray-100 text-gray-400")}>📲 Transf.</button>
+                                    <button onClick={function(){ setPaymentMethod('cash'); setPayAmount(''); setCustomerName(''); setDepositAmount(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='cash'?"bg-green-100 text-green-700 border border-green-200":"bg-gray-100 text-gray-400")}>💵 Efec.</button>
+                                    <button onClick={function(){ setPaymentMethod('transfer'); setPayAmount(''); setCustomerName(''); setDepositAmount(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='transfer'?"bg-indigo-100 text-indigo-700 border border-indigo-200":"bg-gray-100 text-gray-400")}>📲 Transf.</button>
                                     <button onClick={function(){ setPaymentMethod('credit'); setPayAmount(''); }} className={"py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='credit'?"bg-purple-100 text-purple-700 border border-purple-200":"bg-gray-100 text-gray-400")}>📝 Fiado</button>
                                 </div>
-                                <button onClick={function(){ setPaymentMethod('card'); setPayAmount(''); setCustomerName(''); }} className={"w-full py-2 mb-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='card'?"bg-orange-100 text-orange-700 border border-orange-200":"bg-gray-100 text-gray-400")}>💳 Tarjeta (Clip)</button>
+                                <button onClick={function(){ setPaymentMethod('card'); setPayAmount(''); setCustomerName(''); setDepositAmount(''); }} className={"w-full py-2 mb-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='card'?"bg-orange-100 text-orange-700 border border-orange-200":"bg-gray-100 text-gray-400")}>💳 Tarjeta (Clip)</button>
                                 {paymentMethod === 'card' && <div className="mb-4 bg-blue-50 border border-blue-100 p-3 rounded-xl flex justify-between items-center animate-fade-in"><span className="text-xs font-bold text-blue-600 uppercase">Ganancia Neta:</span><span className="text-xl font-black text-blue-800">{formatMoney(clipNet)}</span></div>}
                                 
-                                {/* CAMPO DE NOMBRE PARA FIADO */}
+                                {/* CAMPO DE NOMBRE Y ABONO PARA FIADO */}
                                 {paymentMethod === 'credit' && (
-                                    <div className="mb-4 animate-fade-in">
-                                        <div className="mb-1 text-xs font-bold text-purple-600 uppercase flex justify-between"><span>Nombre del Cliente:</span><span className="text-red-500">* Obligatorio</span></div>
-                                        <input type="text" className="w-full p-3 bg-purple-50 border-2 border-purple-200 rounded-xl font-bold text-purple-900 outline-none placeholder-purple-300" placeholder="Escribe el nombre aquí..." value={customerName} onChange={function(e){setCustomerName(e.target.value)}} />
+                                    <div className="mb-4 animate-fade-in space-y-3">
+                                        <div>
+                                            <div className="mb-1 text-xs font-bold text-purple-600 uppercase flex justify-between"><span>Nombre del Cliente:</span><span className="text-red-500">* Obligatorio</span></div>
+                                            <input type="text" className="w-full p-3 bg-purple-50 border-2 border-purple-200 rounded-xl font-bold text-purple-900 outline-none placeholder-purple-300" placeholder="Ej. Pablo" value={customerName} onChange={function(e){setCustomerName(e.target.value)}} />
+                                        </div>
+                                        <div>
+                                            <div className="mb-1 text-xs font-bold text-purple-600 uppercase">¿Deja algo a cuenta?</div>
+                                            <div className="flex gap-2 items-center">
+                                                <input type="number" className="w-full p-3 bg-purple-50 border-2 border-purple-200 rounded-xl font-bold text-purple-900 outline-none" placeholder="$0.00" value={depositAmount} onChange={function(e){setDepositAmount(e.target.value)}} />
+                                                <div className="bg-red-50 px-3 py-2 rounded-xl text-center min-w-[80px]">
+                                                    <div className="text-[9px] text-red-400 font-bold uppercase">Resta</div>
+                                                    <div className="font-black text-red-600">{formatMoney(debtTotalVal < 0 ? 0 : debtTotalVal)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
