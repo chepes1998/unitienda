@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V33 Abonos Fix</title>
+    <title>POS Pro V33 Abonos + SFC Fix</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -114,6 +114,7 @@
             if(cat === 'dulces') return '🍬';
             if(cat === 'granel') return '🌾';
             if(cat === 'abarrotes') return '🥫';
+            if(cat === 'estandar') return '📦'; // NUEVO EMOJI PARA SFC GENERAL
             return '';
         };
 
@@ -134,7 +135,9 @@
             var bgClass = colors[colorIndex];
             if (p.stock <= 0 && !isAdmin) bgClass = 'bg-gray-400';
             var initials = (p.name || "??").substring(0, 2).toUpperCase();
-            var emoji = !isSFC ? getCatEmoji(p.category) : '';
+            
+            // AHORA SIEMPRE MOSTRAMOS EL EMOJI (Ya sea Hoja o SFC)
+            var emoji = getCatEmoji(p.category);
 
             return (
                 <div onClick={function(){ if(isAdmin) props.onEdit(p); else props.onAdd(p); }} 
@@ -176,7 +179,6 @@
             var unitCost = c / u;
             var totalSales = p * u;
             var profit = totalSales - c;
-            var unitProfit = p - unitCost;
             var margin = c > 0 ? (profit / c) * 100 : 0;
 
             return (
@@ -192,12 +194,15 @@
                                 <div><label className="text-xs font-bold text-gray-500 uppercase">Piezas</label><input type="number" className="w-full p-2 border-b-2 border-purple-200 outline-none font-bold text-gray-800" placeholder="0" value={units} onChange={function(e){setUnits(e.target.value)}} /></div>
                             </div>
                             <div><label className="text-xs font-bold text-gray-500 uppercase">Precio Venta (Unitario)</label><input type="number" className="w-full p-2 border-b-2 border-purple-500 outline-none font-black text-2xl text-purple-700" placeholder="$0" value={price} onChange={function(e){setPrice(e.target.value)}} /></div>
+                            
                             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Costo por unidad:</span><span className="font-bold text-gray-700">{formatMoney(unitCost)}</span></div>
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Venta Total:</span><span className="font-bold text-gray-700">{formatMoney(totalSales)}</span></div>
-                                <div className="flex justify-between text-sm items-center"><span className="text-purple-600 font-bold">Ganancia x Unidad:</span><span className="font-bold text-purple-700 text-lg bg-purple-50 px-2 rounded">{formatMoney(unitProfit)}</span></div>
                                 <div className="border-t border-gray-200 my-2"></div>
-                                <div className="flex justify-between items-center"><span className="font-bold text-purple-700 uppercase">Ganancia Neta:</span><span className="text-2xl font-black text-green-600">{formatMoney(profit)}</span></div>
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-purple-700 uppercase">Ganancia Neta:</span>
+                                    <span className="text-2xl font-black text-green-600">{formatMoney(profit)}</span>
+                                </div>
                                 <div className="text-center text-xs font-bold text-gray-400">Margen: {margin.toFixed(1)}%</div>
                             </div>
                         </div>
@@ -217,13 +222,24 @@
             return (
                 <div className="fixed inset-0 z-50 bg-black bg-opacity-60 p-4 flex items-center justify-center backdrop-blur-sm animate-fade-in">
                     <div className="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="bg-emerald-600 p-4 text-white flex justify-between items-center"><h2 className="text-xl font-bold flex items-center gap-2"><Icon name="money" /> Retiros de Efectivo</h2><button onClick={props.onClose}><Icon name="close" /></button></div>
+                        <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
+                            <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="money" /> Retiros de Efectivo</h2>
+                            <button onClick={props.onClose}><Icon name="close" /></button>
+                        </div>
                         <div className="p-5">
                             <label className="text-sm font-bold text-gray-500 uppercase mb-2 block text-center">Monto Solicitado</label>
                             <input type="number" autoFocus className="w-full text-center text-4xl font-black text-gray-800 border-b-2 border-emerald-500 outline-none pb-2 mb-6" placeholder="$0" value={amount} onChange={function(e){ setAmount(e.target.value) }} />
                             <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3"><div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-blue-500 uppercase">Cobras en Terminal</span><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Efectivo</span></div><div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-emerald-600">{formatMoney(toDeliver)}</span></div><div className="text-[10px] text-center text-blue-400 mt-1 font-medium">Ganancia: {formatMoney(val - toDeliver)}</div></div>
-                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3"><div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Exacto</span><span className="text-xs font-bold text-orange-500 uppercase">Cobras en Terminal</span></div><div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-orange-600">{formatMoney(toCharge)}</span></div><div className="text-[10px] text-center text-orange-400 mt-1 font-medium">Ganancia: {formatMoney(toCharge - val)}</div></div>
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                                    <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-blue-500 uppercase">Cobras en Terminal</span><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Efectivo</span></div>
+                                    <div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-emerald-600">{formatMoney(toDeliver)}</span></div>
+                                    <div className="text-[10px] text-center text-blue-400 mt-1 font-medium">Ganancia: {formatMoney(val - toDeliver)}</div>
+                                </div>
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
+                                    <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Exacto</span><span className="text-xs font-bold text-orange-500 uppercase">Cobras en Terminal</span></div>
+                                    <div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-orange-600">{formatMoney(toCharge)}</span></div>
+                                    <div className="text-[10px] text-center text-orange-400 mt-1 font-medium">Ganancia: {formatMoney(toCharge - val)}</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -268,7 +284,6 @@
                                                 {debt.items.map(function(item, idx){ return <span key={idx} className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">{item.qty} {item.name}</span> })}
                                             </div>
                                             
-                                            {/* SELECCIÓN DE MÉTODO DE PAGO */}
                                             {isSettling ? (
                                                 <div className="space-y-2 animate-fade-in">
                                                     <div className="text-xs font-bold text-center text-indigo-500 uppercase mb-1">¿Cómo pagó el resto?</div>
@@ -315,7 +330,9 @@
                             data.sfcTotal += sale.total;
                             if(sale.items) sale.items.forEach(function(item) {
                                 if (item.store !== 'general' && item.category !== 'abono') {
-                                    data.sfcComm += (item.commission_unit || 0) * item.qty;
+                                    // AQUI CALCULAMOS LA COMISIÓN SFC ACTUALIZADA (si no tiene, por defecto $1 para los viejos)
+                                    var itemComm = item.commission_unit !== undefined ? item.commission_unit : 1.00;
+                                    data.sfcComm += itemComm * item.qty;
                                 }
                                 var key = item.name + suffix; 
                                 if(!data.sfcItems[key]) data.sfcItems[key] = { qty: 0, total: 0, category: item.category };
@@ -325,7 +342,6 @@
                         } else if (sale.store === 'hoja') {
                             data.hojaTotal += sale.total;
                             if(sale.items) sale.items.forEach(function(item) {
-                                // PROTECCIÓN DE COMISIONES EN HOJA PARA ABONOS
                                 if (item.store !== 'general' && item.category !== 'abono') {
                                     data.hojaComm += (item.commission_unit || 0) * item.qty;
                                 }
@@ -365,7 +381,10 @@
                 var date = new Date().toLocaleString();
                 var content = "================================\n      " + title + "\n================================\nFecha: " + date + "\n\nPRODUCTOS VENDIDOS:\n";
                 if(Object.keys(itemsMap).length === 0) content += "(Sin ventas registradas)\n";
-                else Object.entries(itemsMap).forEach(function(entry) { content += (isSFC?"":getCatEmoji(entry[1].category)) + " " + entry[0] + ": " + entry[1].qty + " pz | " + formatMoney(entry[1].total) + "\n"; });
+                else Object.entries(itemsMap).forEach(function(entry) { 
+                    var emj = getCatEmoji(entry[1].category);
+                    content += (emj ? emj + " " : "") + entry[0] + ": " + entry[1].qty + " pz | " + formatMoney(entry[1].total) + "\n"; 
+                });
                 content += "\n--------------------------------\nTOTAL VENDIDO: " + formatMoney(total) + "\nCOMISIÓN:      " + formatMoney(comm) + "\n================================\n";
                 var blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                 var url = URL.createObjectURL(blob);
@@ -389,7 +408,7 @@
                             <div className="bg-blue-50 p-4 border-b border-blue-100 flex justify-between items-center"><h3 className="font-bold text-blue-800 flex items-center gap-2 text-lg">🦆 SFC</h3><div className="text-right"><div className="text-xs text-blue-600 font-bold uppercase">Venta</div><div className="font-black text-xl text-blue-900">{formatMoney(salesData.sfcTotal)}</div></div></div>
                             <div className="p-4">
                                 <div className="flex justify-between items-center mb-4 bg-blue-100 p-3 rounded-xl"><span className="font-bold text-blue-700 text-sm">Comisión:</span><span className="font-black text-lg text-blue-800">{formatMoney(salesData.sfcComm)}</span></div>
-                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">{Object.keys(salesData.sfcItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : Object.entries(salesData.sfcItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-200 py-1 text-slate-800"><span>{entry[0]}</span><span className="font-bold text-slate-900">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }</ul>
+                                <ul className="text-sm space-y-1 mb-4 h-32 overflow-y-auto bg-gray-50 p-2 rounded">{Object.keys(salesData.sfcItems).length === 0 ? <li className="text-gray-400 italic text-xs">Caja en 0.00</li> : Object.entries(salesData.sfcItems).map(function(entry) { return <li key={entry[0]} className="flex justify-between border-b border-gray-200 py-1 text-slate-800"><span>{getCatEmoji(entry[1].category)} {entry[0]}</span><span className="font-bold text-slate-900">{entry[1].qty} pz - {formatMoney(entry[1].total)}</span></li> }) }</ul>
                                 <div className="flex gap-2">
                                     <button onClick={function(){ downloadReport('sfc') }} className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg shadow active:scale-95 flex items-center justify-center gap-2"><Icon name="download" /> TXT</button>
                                     {confirmCutSFC ? <button onClick={function(){ executeCut('sfc') }} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg shadow animate-pulse">¿CONFIRMAR?</button> : <button onClick={function(){ setConfirmCutSFC(true) }} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg shadow flex items-center justify-center gap-2 active:scale-95"><Icon name="scissors" /> CERRAR</button>}
@@ -434,17 +453,32 @@
         var ProductModal = function(props) {
             if (!props.isOpen) return null;
             var editMode = !!props.productToEdit;
-            var initialData = props.productToEdit || { name: "", price: "", stock: "", store: "sfc", category: "abarrotes" };
-            var [form, setForm] = React.useState({ name: initialData.name, price: initialData.price, stock: initialData.stock, store: initialData.store, category: initialData.category || "abarrotes" });
+            
+            // Por defecto asignamos 'estandar' a SFC para no romper registros anteriores
+            var initialData = props.productToEdit || { name: "", price: "", stock: "", store: "sfc", category: "estandar" };
+            if (initialData.store === 'sfc' && !initialData.category) initialData.category = 'estandar';
+            
+            var [form, setForm] = React.useState({ 
+                name: initialData.name, 
+                price: initialData.price, 
+                stock: initialData.stock, 
+                store: initialData.store, 
+                category: initialData.category || "abarrotes" 
+            });
             var [saving, setSaving] = React.useState(false);
+            
             var handleChange = function(f, v) { setForm(Object.assign({}, form, { [f]: v })); };
             var handleSubmit = function(e) {
                 e.preventDefault();
                 if(!form.name || form.price === "" || form.stock === "") return;
                 setSaving(true);
                 props.onSave({
-                    name: form.name, price: parseFloat(form.price), stock: parseInt(form.stock), store: form.store,
-                    category: form.store === 'hoja' ? form.category : null, updated_at: new Date().toISOString()
+                    name: form.name, 
+                    price: parseFloat(form.price), 
+                    stock: parseInt(form.stock), 
+                    store: form.store,
+                    category: form.category, // Guardamos la categoría elegida (sea de hoja o de sfc)
+                    updated_at: new Date().toISOString()
                 }, props.productToEdit ? props.productToEdit.id : null, function() { setSaving(false); });
             };
             return (
@@ -463,10 +497,32 @@
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Tienda:</label>
                                 <div className="flex gap-3 mb-3">
-                                    <div onClick={function(){handleChange('store','sfc')}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='sfc'?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-400')}>🦆 SFC <div className="text-[9px] font-normal">Comisión $1</div></div>
-                                    <div onClick={function(){handleChange('store','hoja')}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='hoja'?'border-orange-500 bg-orange-50 text-orange-700':'border-gray-200 text-gray-400')}>🍁 Hoja</div>
+                                    <div onClick={function(){handleChange('store','sfc'); handleChange('category', 'estandar');}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='sfc'?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-400')}>🦆 SFC</div>
+                                    <div onClick={function(){handleChange('store','hoja'); handleChange('category', 'abarrotes');}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='hoja'?'border-orange-500 bg-orange-50 text-orange-700':'border-gray-200 text-gray-400')}>🍁 Hoja</div>
                                 </div>
-                                {form.store === 'hoja' && <div className="space-y-2 mt-3 animate-fade-in"><label className="text-xs font-bold text-orange-600 uppercase block">Categoría Hoja:</label><div className="grid grid-cols-1 gap-2"><div onClick={function(){handleChange('category','abarrotes')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='abarrotes'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🥫 Abarrotes</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $1.00</span></div><div onClick={function(){handleChange('category','granel')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='granel'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🌾 A Granel</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $0.50</span></div><div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulces</span><span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Ganancia: $0.00</span></div></div></div>}
+                                
+                                {/* NUEVO: SELECTOR DE COMISIONES PARA SFC */}
+                                {form.store === 'sfc' && (
+                                    <div className="space-y-2 mt-3 animate-fade-in">
+                                        <label className="text-xs font-bold text-blue-600 uppercase block">Categoría SFC (Comisión):</label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <div onClick={function(){handleChange('category','estandar')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='estandar'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">📦 General</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $1.00</span></div>
+                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulcería</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $0.50</span></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* SELECTOR PARA HOJA (YA EXISTÍA) */}
+                                {form.store === 'hoja' && (
+                                    <div className="space-y-2 mt-3 animate-fade-in">
+                                        <label className="text-xs font-bold text-orange-600 uppercase block">Categoría Hoja:</label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <div onClick={function(){handleChange('category','abarrotes')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='abarrotes'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🥫 Abarrotes</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $1.00</span></div>
+                                            <div onClick={function(){handleChange('category','granel')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='granel'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🌾 A Granel</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $0.50</span></div>
+                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulces</span><span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Ganas: $0.00</span></div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <button type="submit" disabled={saving} className={"w-full text-white font-bold p-4 rounded-xl shadow-lg " + (saving ? "bg-gray-400" : (editMode ? "bg-indigo-600" : "bg-slate-900"))}>{saving ? "Guardando..." : "Guardar"}</button>
                         </form>
@@ -482,7 +538,7 @@
             var [search, setSearch] = React.useState("");
             var [payAmount, setPayAmount] = React.useState("");
             var [customerName, setCustomerName] = React.useState(""); 
-            var [depositAmount, setDepositAmount] = React.useState(""); // NUEVO: Monto que deja a cuenta
+            var [depositAmount, setDepositAmount] = React.useState(""); 
             
             var [modalOpen, setModalOpen] = React.useState(false);
             var [reportsOpen, setReportsOpen] = React.useState(false);
@@ -533,29 +589,28 @@
             var handleSettleDebt = function(debtDoc, method) {
                 var batch = db.batch();
                 
-                // Calcular factor de proporción para el PRECIO (el dinero que entra hoy)
                 var originalTotal = debtDoc.original_total || debtDoc.total;
                 var remainingTotal = debtDoc.total;
                 var ratio = originalTotal > 0 ? (remainingTotal / originalTotal) : 1;
 
-                // Preparar items ajustados
                 var settledItems = debtDoc.items.map(function(item) {
-                    // Lógica de comisión estándar
                     var comm = 0;
-                    if (item.store === 'sfc') comm = 1.00;
-                    else if (item.store === 'hoja') {
+                    // AQUÍ ESTÁ EL CÁLCULO DE COMISIÓN DE SFC EN ABONOS
+                    if (item.store === 'sfc') {
+                        comm = item.category === 'dulces' ? 0.50 : 1.00;
+                    } else if (item.store === 'hoja') {
                         if (item.category === 'granel') comm = 0.50;
                         else if (item.category === 'dulces') comm = 0.00;
-                        else comm = 1.00; // Abarrotes
+                        else comm = 1.00; 
                     }
 
                     return {
                         name: item.name, 
                         qty: item.qty,
-                        price: item.price * ratio, // El precio sí se ajusta (es lo que pagan hoy)
+                        price: item.price * ratio, 
                         category: item.category,
                         store: item.store,
-                        commission_unit: comm // La comisión VA COMPLETA porque no se pagó en el abono
+                        commission_unit: comm 
                     };
                 });
 
@@ -581,7 +636,6 @@
             var handleCheckout = function() {
                 if(!cart.length) return;
 
-                // SI ES FIADO
                 if (paymentMethod === 'credit') {
                     if (!customerName || customerName.trim() === "") {
                         alert("Por favor escribe el nombre del cliente.");
@@ -596,7 +650,6 @@
 
                     var batch = db.batch();
                     
-                    // 1. Guardar Deuda (solo por lo que resta)
                     batch.set(DEBTS_REF.doc(), {
                         customer: customerName,
                         items: cart,
@@ -606,8 +659,6 @@
                         date: new Date().toISOString()
                     });
 
-                    // 2. Si dejó abono, registrarlo como venta YA (Efectivo por defecto o genérico)
-                    // LÓGICA INTELIGENTE: Si todo es hoja -> hoja, si no -> sfc
                     if (deposit > 0) {
                         var allHoja = cart.every(function(item){ return item.store === 'hoja' });
                         var abonoStore = allHoja ? 'hoja' : 'sfc'; 
@@ -616,12 +667,11 @@
                             store: abonoStore,
                             items: [{name: "Abono Fiado: " + customerName, price: deposit, qty: 1, category: 'abono', store: 'general'}],
                             total: deposit,
-                            method: 'cash', // Asumimos que el abono es en efectivo al momento
+                            method: 'cash', 
                             date: new Date().toISOString()
                         });
                     }
 
-                    // 3. Descontar Inventario
                     cart.forEach(function(i){ batch.update(PRODUCTS_REF.doc(i.id), {stock: i.stock - i.qty}); });
 
                     batch.commit().then(function(){
@@ -636,9 +686,12 @@
                 var sfcItems = cart.filter(function(i){ return i.store==='sfc' });
                 var hojaItems = cart.filter(function(i){ return i.store==='hoja' });
 
+                // AQUI CALCULAMOS LA COMISIÓN SFC DEPENDE LA CATEGORÍA
                 if(sfcItems.length > 0) {
                     var total = sfcItems.reduce(function(a,i){ return a+(i.price*i.qty) }, 0);
-                    var items = sfcItems.map(function(i){ return Object.assign({}, i, {commission_unit:1.00}) });
+                    var items = sfcItems.map(function(i){ 
+                        return Object.assign({}, i, {commission_unit: (i.category === 'dulces' ? 0.50 : 1.00)}) 
+                    });
                     batch.set(SALES_REF.doc(), { store: 'sfc', items: items, total: total, method: paymentMethod, date: new Date().toISOString() });
                 }
 
@@ -661,7 +714,6 @@
             var clipNet = paymentMethod === 'card' ? calculateClipNet(total) : 0;
             var totalItems = cart.reduce(function(a,b){ return a+b.qty },0);
             
-            // Cálculos para Fiado
             var depositVal = parseFloat(depositAmount) || 0;
             var debtTotalVal = total - depositVal;
 
@@ -679,10 +731,8 @@
                     <div className="flex-1 flex flex-col h-full relative w-full bg-slate-900">
                         <div className={"shadow-md z-10 flex flex-col sticky top-0 p-3 transition-colors " + (isAdminMode ? "bg-slate-800" : "bg-gradient-to-br from-red-900 to-black")}>
                             
-                            {/* NUEVO DISEÑO DE HEADER: BARRA ARRIBA, ICONOS ABAJO */}
                             <div className="flex flex-col gap-3">
                                 
-                                {/* FILA 1: BUSCADOR ESPACIOSO */}
                                 <div className="w-full relative">
                                     <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none"><Icon name="search" className="w-6 h-6" /></span>
                                     <input 
@@ -698,14 +748,12 @@
                                     {search && <button onClick={function(){setSearch('')}} className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 p-2"><Icon name="close" className="w-5 h-5" /></button>}
                                 </div>
 
-                                {/* FILA 2: BOTONES DE ACCIÓN (SCROLL HORIZONTAL SI ES NECESARIO) */}
                                 <div className="flex justify-between items-center gap-2 overflow-x-auto no-scrollbar pb-1">
                                     <div className="flex gap-2">
                                         <button onClick={function(){window.location.reload()}} className="text-white/50 p-2 hover:text-white rounded-lg hover:bg-white/10"><Icon name="refresh" /></button>
                                         <button onClick={function(){setReportsOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="chart" /></button>
                                         <button onClick={function(){setProfitCalcOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="trending" className="text-purple-400" /></button>
                                         <button onClick={function(){setWithdrawalOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-white hover:bg-white/20")}><Icon name="money" className="text-green-400"/></button>
-                                        {/* NUEVO BOTÓN LIBRETA DE DEUDAS */}
                                         <button onClick={function(){setDebtsOpen(true)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all " + (isAdminMode ? "bg-slate-700 text-white" : "bg-white/10 text-indigo-300 hover:bg-white/20")}><Icon name="book" /></button>
                                     </div>
                                     <div className="flex gap-2 items-center">
@@ -714,7 +762,7 @@
                                             <div>{products.length}</div>
                                         </div>
                                         <button onClick={function(){setIsAdminMode(!isAdminMode)}} className={"w-11 h-11 rounded-xl flex items-center justify-center shadow-lg transition-all border-2 " + (isAdminMode ? "bg-yellow-500 border-yellow-400 text-slate-900" : "bg-transparent border-white/20 text-yellow-400 hover:bg-white/10")}><Icon name="settings" /></button>
-                                        {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-11 h-11 rounded-xl flex items-center justify-center shadow-lg animate-fade-in"><Icon name="plus" /></button>}
+                                        {isAdminMode && <button onClick={function(){setProductToEdit(null);setModalOpen(true)}} className="bg-blue-600 text-white w-11 h-11 rounded-lg flex items-center justify-center shadow-lg animate-fade-in"><Icon name="plus" /></button>}
                                     </div>
                                 </div>
                             
@@ -740,7 +788,7 @@
                                 <h3 className="text-sm font-bold text-gray-500 mb-3 uppercase">Detalle de Compra</h3>
                                 {cart.length===0 ? <p className="text-gray-400 text-center py-10">Agrega productos.</p> : 
                                     cart.map(function(item){
-                                        var emoji = !item.store==='sfc' ? getCatEmoji(item.category) : '';
+                                        var emoji = getCatEmoji(item.category);
                                         return <div key={item.id} className="flex justify-between items-center bg-white p-2 mb-2 rounded-lg shadow-sm border border-gray-100"><div><div className="font-bold text-slate-800 text-sm">{emoji} {item.name}</div><div className="text-xs text-gray-500">{formatMoney(item.price)} x {item.qty}</div></div><div className="flex items-center gap-3"><span className="font-bold text-slate-900">{formatMoney(item.price*item.qty)}</span><button onClick={function(){removeFromCart(item.id)}} className="p-2 text-red-500 bg-red-50 rounded-lg"><Icon name="trash" className="w-4 h-4" /></button></div></div>
                                     })
                                 }
@@ -754,7 +802,6 @@
                                 <button onClick={function(){ setPaymentMethod('card'); setPayAmount(''); setCustomerName(''); setDepositAmount(''); }} className={"w-full py-2 mb-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='card'?"bg-orange-100 text-orange-700 border border-orange-200":"bg-gray-100 text-gray-400")}>💳 Tarjeta (Clip)</button>
                                 {paymentMethod === 'card' && <div className="mb-4 bg-blue-50 border border-blue-100 p-3 rounded-xl flex justify-between items-center animate-fade-in"><span className="text-xs font-bold text-blue-600 uppercase">Ganancia Neta:</span><span className="text-xl font-black text-blue-800">{formatMoney(clipNet)}</span></div>}
                                 
-                                {/* CAMPO DE NOMBRE Y ABONO PARA FIADO */}
                                 {paymentMethod === 'credit' && (
                                     <div className="mb-4 animate-fade-in space-y-3">
                                         <div>
