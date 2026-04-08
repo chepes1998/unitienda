@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V33 Abonos + SFC Fix</title>
+    <title>POS Pro V34 (Fix Tienda Hoja + Comisiones SFC)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -179,6 +179,7 @@
             var unitCost = c / u;
             var totalSales = p * u;
             var profit = totalSales - c;
+            var unitProfit = p - unitCost;
             var margin = c > 0 ? (profit / c) * 100 : 0;
 
             return (
@@ -194,15 +195,12 @@
                                 <div><label className="text-xs font-bold text-gray-500 uppercase">Piezas</label><input type="number" className="w-full p-2 border-b-2 border-purple-200 outline-none font-bold text-gray-800" placeholder="0" value={units} onChange={function(e){setUnits(e.target.value)}} /></div>
                             </div>
                             <div><label className="text-xs font-bold text-gray-500 uppercase">Precio Venta (Unitario)</label><input type="number" className="w-full p-2 border-b-2 border-purple-500 outline-none font-black text-2xl text-purple-700" placeholder="$0" value={price} onChange={function(e){setPrice(e.target.value)}} /></div>
-                            
                             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Costo por unidad:</span><span className="font-bold text-gray-700">{formatMoney(unitCost)}</span></div>
                                 <div className="flex justify-between text-sm"><span className="text-gray-500">Venta Total:</span><span className="font-bold text-gray-700">{formatMoney(totalSales)}</span></div>
+                                <div className="flex justify-between text-sm items-center"><span className="text-purple-600 font-bold">Ganancia x Unidad:</span><span className="font-bold text-purple-700 text-lg bg-purple-50 px-2 rounded">{formatMoney(unitProfit)}</span></div>
                                 <div className="border-t border-gray-200 my-2"></div>
-                                <div className="flex justify-between items-center">
-                                    <span className="font-bold text-purple-700 uppercase">Ganancia Neta:</span>
-                                    <span className="text-2xl font-black text-green-600">{formatMoney(profit)}</span>
-                                </div>
+                                <div className="flex justify-between items-center"><span className="font-bold text-purple-700 uppercase">Ganancia Neta:</span><span className="text-2xl font-black text-green-600">{formatMoney(profit)}</span></div>
                                 <div className="text-center text-xs font-bold text-gray-400">Margen: {margin.toFixed(1)}%</div>
                             </div>
                         </div>
@@ -222,24 +220,13 @@
             return (
                 <div className="fixed inset-0 z-50 bg-black bg-opacity-60 p-4 flex items-center justify-center backdrop-blur-sm animate-fade-in">
                     <div className="bg-white w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl">
-                        <div className="bg-emerald-600 p-4 text-white flex justify-between items-center">
-                            <h2 className="text-xl font-bold flex items-center gap-2"><Icon name="money" /> Retiros de Efectivo</h2>
-                            <button onClick={props.onClose}><Icon name="close" /></button>
-                        </div>
+                        <div className="bg-emerald-600 p-4 text-white flex justify-between items-center"><h2 className="text-xl font-bold flex items-center gap-2"><Icon name="money" /> Retiros de Efectivo</h2><button onClick={props.onClose}><Icon name="close" /></button></div>
                         <div className="p-5">
                             <label className="text-sm font-bold text-gray-500 uppercase mb-2 block text-center">Monto Solicitado</label>
                             <input type="number" autoFocus className="w-full text-center text-4xl font-black text-gray-800 border-b-2 border-emerald-500 outline-none pb-2 mb-6" placeholder="$0" value={amount} onChange={function(e){ setAmount(e.target.value) }} />
                             <div className="space-y-4">
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
-                                    <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-blue-500 uppercase">Cobras en Terminal</span><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Efectivo</span></div>
-                                    <div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-emerald-600">{formatMoney(toDeliver)}</span></div>
-                                    <div className="text-[10px] text-center text-blue-400 mt-1 font-medium">Ganancia: {formatMoney(val - toDeliver)}</div>
-                                </div>
-                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3">
-                                    <div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Exacto</span><span className="text-xs font-bold text-orange-500 uppercase">Cobras en Terminal</span></div>
-                                    <div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-orange-600">{formatMoney(toCharge)}</span></div>
-                                    <div className="text-[10px] text-center text-orange-400 mt-1 font-medium">Ganancia: {formatMoney(toCharge - val)}</div>
-                                </div>
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3"><div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-blue-500 uppercase">Cobras en Terminal</span><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Efectivo</span></div><div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-emerald-600">{formatMoney(toDeliver)}</span></div><div className="text-[10px] text-center text-blue-400 mt-1 font-medium">Ganancia: {formatMoney(val - toDeliver)}</div></div>
+                                <div className="bg-orange-50 border border-orange-200 rounded-xl p-3"><div className="flex justify-between items-center mb-1"><span className="text-xs font-bold text-emerald-600 uppercase">Entregas Exacto</span><span className="text-xs font-bold text-orange-500 uppercase">Cobras en Terminal</span></div><div className="flex justify-between items-end"><span className="text-xl font-bold text-gray-800">{formatMoney(val)}</span><Icon name="arrowRight" className="text-gray-400 w-4 h-4"/><span className="text-3xl font-black text-orange-600">{formatMoney(toCharge)}</span></div><div className="text-[10px] text-center text-orange-400 mt-1 font-medium">Ganancia: {formatMoney(toCharge - val)}</div></div>
                             </div>
                         </div>
                     </div>
@@ -284,6 +271,7 @@
                                                 {debt.items.map(function(item, idx){ return <span key={idx} className="text-[10px] bg-gray-100 px-2 py-1 rounded text-gray-600 border border-gray-200">{item.qty} {item.name}</span> })}
                                             </div>
                                             
+                                            {/* SELECCIÓN DE MÉTODO DE PAGO */}
                                             {isSettling ? (
                                                 <div className="space-y-2 animate-fade-in">
                                                     <div className="text-xs font-bold text-center text-indigo-500 uppercase mb-1">¿Cómo pagó el resto?</div>
@@ -342,6 +330,7 @@
                         } else if (sale.store === 'hoja') {
                             data.hojaTotal += sale.total;
                             if(sale.items) sale.items.forEach(function(item) {
+                                // PROTECCIÓN DE COMISIONES EN HOJA PARA ABONOS
                                 if (item.store !== 'general' && item.category !== 'abono') {
                                     data.hojaComm += (item.commission_unit || 0) * item.qty;
                                 }
@@ -454,7 +443,7 @@
             if (!props.isOpen) return null;
             var editMode = !!props.productToEdit;
             
-            // Por defecto asignamos 'estandar' a SFC para no romper registros anteriores
+            // Por defecto, si es SFC viejo, le asignamos 'estandar' para mantener comisión $1
             var initialData = props.productToEdit || { name: "", price: "", stock: "", store: "sfc", category: "estandar" };
             if (initialData.store === 'sfc' && !initialData.category) initialData.category = 'estandar';
             
@@ -468,6 +457,13 @@
             var [saving, setSaving] = React.useState(false);
             
             var handleChange = function(f, v) { setForm(Object.assign({}, form, { [f]: v })); };
+            
+            // LA CORRECCIÓN: Actualizar ambos valores en el mismo momento para que React no se confunda
+            var handleStoreChange = function(newStore) {
+                var defaultCat = newStore === 'sfc' ? 'estandar' : 'abarrotes';
+                setForm(Object.assign({}, form, { store: newStore, category: defaultCat }));
+            };
+
             var handleSubmit = function(e) {
                 e.preventDefault();
                 if(!form.name || form.price === "" || form.stock === "") return;
@@ -477,10 +473,11 @@
                     price: parseFloat(form.price), 
                     stock: parseInt(form.stock), 
                     store: form.store,
-                    category: form.category, // Guardamos la categoría elegida (sea de hoja o de sfc)
+                    category: form.category, // Guardamos la categoría sin importar si es SFC o Hoja
                     updated_at: new Date().toISOString()
                 }, props.productToEdit ? props.productToEdit.id : null, function() { setSaving(false); });
             };
+
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4 backdrop-filter backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
@@ -497,29 +494,29 @@
                             <div>
                                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Tienda:</label>
                                 <div className="flex gap-3 mb-3">
-                                    <div onClick={function(){handleChange('store','sfc'); handleChange('category', 'estandar');}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='sfc'?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-400')}>🦆 SFC</div>
-                                    <div onClick={function(){handleChange('store','hoja'); handleChange('category', 'abarrotes');}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='hoja'?'border-orange-500 bg-orange-50 text-orange-700':'border-gray-200 text-gray-400')}>🍁 Hoja</div>
+                                    <div onClick={function(){handleStoreChange('sfc')}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='sfc'?'border-blue-500 bg-blue-50 text-blue-700':'border-gray-200 text-gray-400')}>🦆 SFC</div>
+                                    <div onClick={function(){handleStoreChange('hoja')}} className={"flex-1 p-3 rounded-lg border-2 cursor-pointer text-center font-bold " + (form.store==='hoja'?'border-orange-500 bg-orange-50 text-orange-700':'border-gray-200 text-gray-400')}>🍁 Hoja</div>
                                 </div>
-                                
-                                {/* NUEVO: SELECTOR DE COMISIONES PARA SFC */}
+
+                                {/* NUEVO: SELECCIÓN DE CATEGORÍA SFC */}
                                 {form.store === 'sfc' && (
                                     <div className="space-y-2 mt-3 animate-fade-in">
                                         <label className="text-xs font-bold text-blue-600 uppercase block">Categoría SFC (Comisión):</label>
                                         <div className="grid grid-cols-1 gap-2">
-                                            <div onClick={function(){handleChange('category','estandar')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='estandar'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">📦 General</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $1.00</span></div>
-                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulcería</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $0.50</span></div>
+                                            <div onClick={function(){handleChange('category','estandar')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='estandar'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">📦 General</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $1.00</span></div>
+                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-blue-100 border-blue-500 text-blue-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulcería</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $0.50</span></div>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* SELECTOR PARA HOJA (YA EXISTÍA) */}
+                                {/* SELECCIÓN DE CATEGORÍA HOJA (Ya existía) */}
                                 {form.store === 'hoja' && (
                                     <div className="space-y-2 mt-3 animate-fade-in">
                                         <label className="text-xs font-bold text-orange-600 uppercase block">Categoría Hoja:</label>
                                         <div className="grid grid-cols-1 gap-2">
-                                            <div onClick={function(){handleChange('category','abarrotes')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='abarrotes'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🥫 Abarrotes</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $1.00</span></div>
-                                            <div onClick={function(){handleChange('category','granel')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='granel'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🌾 A Granel</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganas: $0.50</span></div>
-                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulces</span><span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Ganas: $0.00</span></div>
+                                            <div onClick={function(){handleChange('category','abarrotes')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='abarrotes'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🥫 Abarrotes</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $1.00</span></div>
+                                            <div onClick={function(){handleChange('category','granel')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='granel'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🌾 A Granel</span><span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-bold">Ganancia: $0.50</span></div>
+                                            <div onClick={function(){handleChange('category','dulces')}} className={"p-3 rounded-lg border cursor-pointer flex justify-between items-center " + (form.category==='dulces'?'bg-orange-100 border-orange-500 text-orange-900':'border-gray-200 text-gray-500')}><span className="font-bold">🍬 Dulces</span><span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded font-bold">Ganancia: $0.00</span></div>
                                         </div>
                                     </div>
                                 )}
@@ -788,7 +785,7 @@
                                 <h3 className="text-sm font-bold text-gray-500 mb-3 uppercase">Detalle de Compra</h3>
                                 {cart.length===0 ? <p className="text-gray-400 text-center py-10">Agrega productos.</p> : 
                                     cart.map(function(item){
-                                        var emoji = getCatEmoji(item.category);
+                                        var emoji = !item.store==='sfc' ? getCatEmoji(item.category) : '';
                                         return <div key={item.id} className="flex justify-between items-center bg-white p-2 mb-2 rounded-lg shadow-sm border border-gray-100"><div><div className="font-bold text-slate-800 text-sm">{emoji} {item.name}</div><div className="text-xs text-gray-500">{formatMoney(item.price)} x {item.qty}</div></div><div className="flex items-center gap-3"><span className="font-bold text-slate-900">{formatMoney(item.price*item.qty)}</span><button onClick={function(){removeFromCart(item.id)}} className="p-2 text-red-500 bg-red-50 rounded-lg"><Icon name="trash" className="w-4 h-4" /></button></div></div>
                                     })
                                 }
@@ -802,6 +799,7 @@
                                 <button onClick={function(){ setPaymentMethod('card'); setPayAmount(''); setCustomerName(''); setDepositAmount(''); }} className={"w-full py-2 mb-4 rounded-lg text-sm font-bold flex items-center justify-center gap-1 transition-all " + (paymentMethod==='card'?"bg-orange-100 text-orange-700 border border-orange-200":"bg-gray-100 text-gray-400")}>💳 Tarjeta (Clip)</button>
                                 {paymentMethod === 'card' && <div className="mb-4 bg-blue-50 border border-blue-100 p-3 rounded-xl flex justify-between items-center animate-fade-in"><span className="text-xs font-bold text-blue-600 uppercase">Ganancia Neta:</span><span className="text-xl font-black text-blue-800">{formatMoney(clipNet)}</span></div>}
                                 
+                                {/* CAMPO DE NOMBRE Y ABONO PARA FIADO */}
                                 {paymentMethod === 'credit' && (
                                     <div className="mb-4 animate-fade-in space-y-3">
                                         <div>
